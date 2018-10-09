@@ -1,13 +1,19 @@
 -- file: leds.lua
-local module = {}
+local module = {
+    color = {255, 255, 255},
+    brightness = 255,
+    speed = 10,
+    effect = "solid",
+    status = "ON",
+    buffer = ws2812.newBuffer(led_strip.leds, 3),
+}
 
-module.color = {255, 255, 255}
-module.brightness = 255
-module.speed = 10
-module.buffer = ws2812.newBuffer(led_strip.leds, 3)
 
 function module.init()
     ws2812.init()
+
+    module.on_all()
+    tmr.alarm(4, 500, tmr.ALARM_SINGLE, module.off_all)
 end
 
 
@@ -30,40 +36,33 @@ function module.set_color(r, g, b)
 end
 
 
-function module.slide_on()
-    local count = 1
-    tmr.alarm(4, module.speed, tmr.ALARM_AUTO,
-        function()
-            if count > led_strip.leds then
-                tmr.unregister(4)
-            else
-                module.buffer:set(
-                    count,
-                    module.color[1],
-                    module.color[2],
-                    module.color[3]
-                )
-                ws2812.write(module.buffer)
-                count = count + 1
-            end
+function module.animate()
+    if module.effect == "solid" then
+        if module.status == "ON" then
+            module.on_all()
+        else
+            module.off_all()
         end
-    )
-end
 
-
-function module.slide_off()
-    local count = 1
-    tmr.alarm(4, module.speed, tmr.ALARM_AUTO,
-        function()
-            if count > led_strip.leds then
-                tmr.unregister(4)
-            else
-                module.buffer:set(count, {0, 0, 0})
-                ws2812.write(module.buffer)
-                count = count + 1
-            end
+    elseif module.effect == "slide" then
+        local color = module.color
+        if module.status == "OFF" then
+            color = {0, 0, 0}
         end
-    )
+
+        local count = 1
+        tmr.alarm(4, module.speed, tmr.ALARM_AUTO,
+            function()
+                if count > led_strip.leds then
+                    tmr.unregister(4)
+                else
+                    module.buffer:set(count, color)
+                    ws2812.write(module.buffer)
+                    count = count + 1
+                end
+            end
+        )
+    end
 end
 
 return module

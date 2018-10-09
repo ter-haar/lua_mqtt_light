@@ -12,9 +12,9 @@ end
 
 
 local function dispatch_cmd(client, message)
-    if message == 'ping' then
+    if message == "ping" then
         client:publish(myconf.mqtt_topic.."/cmd/status", "pong", 0, 0)
-    elseif message == 'reset' then
+    elseif message == "reset" then
         client:publish(myconf.mqtt_topic.."/cmd/reset", "pong", 0, 0)
         node.restart()
     end
@@ -26,30 +26,29 @@ local function process_json(client, message)
     local isok, result = pcall(sjson.decode, message)
     if isok then
         local status = {}
-        if result['color'] ~= nill then
+        if result["color"] ~= nill then
             l.set_color(
-                result['color']['r'],
-                result['color']['g'],
-                result['color']['b']
+                result["color"]["r"],
+                result["color"]["g"],
+                result["color"]["b"]
             )
-            status['color'] = {
-                r = result['color']['r'],
-                g = result['color']['g'],
-                b = result['color']['b']
-            }
+            status["color"] = result["color"]
         end
 
-        if result['state'] == "ON" then
-            l.slide_on()
-            status['state'] = 'ON'
-        elseif result['state'] == "OFF" then
-            l.slide_off()
-            status['state'] = 'OFF'
+        if result["effect"] ~= nill then
+            status["effect"] = result["effect"]
+            l.effect = result["effect"]
+        end
+
+        if result["state"] == "ON" or result["state"] == "OFF" then
+            status["state"] = result["state"]
+            l.status = result["state"]
+            l.animate()
         end
 
         client:publish(myconf.mqtt_topic.."/status", sjson.encode(status), 0, 0)
     else
-        print('json decode error: '..message)
+        print("json decode error: "..message)
     end
 end
 
@@ -59,9 +58,9 @@ function module.mqtt_dispatch(client, topic, message)
     local tokens = split(topic, "/")
     local last_token = tokens[#tokens]
 
-    if last_token == 'set' then
+    if last_token == "set" then
         process_json(client, message)
-    elseif last_token == 'cmd' then
+    elseif last_token == "cmd" then
         dispatch_cmd(client, message)
     end
 end

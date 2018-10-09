@@ -7,7 +7,7 @@ function module.init_mqtt(dispatch)
 
     tmr.alarm(3, 1000, tmr.ALARM_AUTO,
         function()
-            print('mqtt: wait for wifi')
+            print("mqtt: wait for wifi")
             if wifi.sta.status() == wifi.STA_GOTIP then
                 tmr.unregister(3)
 
@@ -24,6 +24,7 @@ function module.init_mqtt(dispatch)
                     end,
                     function(client)
                         print("MQTT error")
+                        node.restart()
                     end
                 )
             end
